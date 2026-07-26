@@ -28,7 +28,8 @@ struct CpuSamplingConfig {
 };
 
 struct CpuGenerationRequest {
-  std::filesystem::path model_dir{"models/qwen3-0.6b"};
+  std::filesystem::path model_dir{
+    "models/qwen3.5-0.8b/Qwen3.5-0.8B-Q4_K_M.gguf"};
   std::string prompt;
   std::size_t max_new_tokens{16};
   std::size_t prefill_chunk_tokens{0};

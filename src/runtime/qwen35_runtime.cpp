@@ -6,7 +6,6 @@
 #include "toyllm/runtime/gguf_tokenizer.hpp"
 #include "toyllm/runtime/qwen35_multimodal.hpp"
 #include "toyllm/runtime/qwen35_vl_adapter.hpp"
-#include "toyllm/runtime/qwen_tokenizer.hpp"
 #include "toyllm/runtime/qwen35_prefix_cache.hpp"
 #include "toyllm/runtime/qwen35_weight_map.hpp"
 
@@ -5412,6 +5411,8 @@ Result<CpuGenerationResult> generate_qwen35_metal(const CpuGenerationRequest& re
       }
       mixed_prefill = std::move(mixed.value());
     } else if (!request.messages.empty()) {
+
+      // format 过程
       auto formatted = format_qwen35_chat_prompt(tokenizer.value(),
                                                  request.messages, true,
                                                  request.enable_thinking);
@@ -5419,6 +5420,8 @@ Result<CpuGenerationResult> generate_qwen35_metal(const CpuGenerationRequest& re
         return formatted.status();
       }
       prompt = formatted.value();
+      // 解析特殊 prompt 语法
+      // 把 prompt 字符串转换成模型可以处理的 token ID 数组。
       prompt_tokens = gguf_encode_text(tokenizer.value(), prompt, false, true);
     } else {
       prompt_tokens = gguf_encode_text(tokenizer.value(), prompt, false,
@@ -5428,6 +5431,9 @@ Result<CpuGenerationResult> generate_qwen35_metal(const CpuGenerationRequest& re
   if (!prompt_tokens.is_ok()) {
     return prompt_tokens.status();
   }
+
+
+  //
   const auto prompt_token_count = mixed_prefill.has_value()
                                     ? mixed_prefill->total_tokens
                                     : prompt_tokens.value().size();
