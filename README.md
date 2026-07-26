@@ -9,14 +9,11 @@
 Qwen3.5 的 tokenizer、GGUF 权重读取、hybrid decoder、KV/recurrent cache、采样、
 profiling 和 OpenAI-compatible gateway 都收敛到本仓库自己的 runtime/backend 中。
 
-`Qwen/Qwen3-0.6B` safetensors 路径仍保留为 legacy/reference path，主要用于早期
-CPU/MPS/MPSGraph correctness 对齐和 smoke test。
-
 核心定位：
 
 - 不依赖现成 LLM runtime 执行推理热路径。
-- Qwen3.5 主线使用 GGUF，不走 safetensors 或旧 Qwen3 config 变体。
-- Metal path 是 Qwen3.5 的主要执行路径；CPU 主要用于旧模型 reference、调试和测试。
+- 只支持 Qwen3.5 GGUF，不保留旧 Qwen3/Safetensors 运行路径。
+- Metal path 是 Qwen3.5 的执行路径。
 - 公共 C++ 头文件保持平台无关，Apple API 隔离在 Objective-C++ `.mm` 文件。
 - OpenAI-compatible gateway 作为本地调试和集成入口，不作为生产并发 server。
 
@@ -32,13 +29,6 @@ CPU/MPS/MPSGraph correctness 对齐和 smoke test。
 - Architecture key: `general.architecture = "qwen35"`
 - Decoder shape: hybrid full attention + recurrent linear attention
 - Cache: full-attention KV cache plus Qwen3.5 recurrent R/S state
-
-Legacy model:
-
-- Model: `Qwen/Qwen3-0.6B`
-- Local path: `models/qwen3-0.6b/`
-- Format: HF-style config/tokenizer + `model.safetensors`
-- Use case: CPU reference, old MPS/MPSGraph path, compatibility tests
 
 真实模型权重不要提交到 git，统一放在 `models/` 下。
 
@@ -137,9 +127,8 @@ Qwen3.5 path 支持单进程、单 active slot、host-backed exact-prefix block 
 可用诊断入口：
 
 - `mps` / `mps-smoke`: Metal/MPS availability 和 operator smoke test。
-- `mpsgraph` / `mpsgraph-smoke`: MPSGraph availability 和 tiny graph smoke test。
 - `inspect`: 检查模型配置和 tokenizer 结构。
-- `weights`: 检查 safetensors 或 GGUF 权重结构。
+- `weights`: 检查 Qwen3.5 GGUF 权重结构。
 - `doctor`: 一次性输出 backend、模型和权重诊断。
 - `bench-qwen35-matmul`: 用真实 GGUF K-quant tensor 跑 Metal matmul benchmark。
 - `bench-qwen35-gdn`: 用 synthetic Qwen3.5 标准形状跑 GDN benchmark。
@@ -446,17 +435,6 @@ Qwen3.5 Metal benchmark helpers：
   --warmup 2
 ```
 
-Legacy Qwen3 0.6B smoke path：
-
-```bash
-./build/debug/kraken-infer infer \
-  --model models/qwen3-0.6b \
-  --prompt "hello" \
-  --device mps \
-  --max-new-tokens 32 \
-  --stream
-```
-
 Makefile fallback：
 
 ```bash
@@ -512,12 +490,11 @@ docs/                    Architecture notes, milestones, milestone tasks
 docs/assets/             README and architecture images
 include/toyllm/          Public C++ headers
 models/                  Local model placeholders and downloaded model files
-src/core/                Status, device, tensor primitives
-src/model/               Model/generation/tokenizer config parsing
+src/core/                Status and device primitives
+src/model/               Qwen3.5 GGUF model config parsing
 src/runtime/             Runtime orchestration, GGUF, gateway, Qwen3.5 path
-src/runtime/cpu/         Legacy tokenizer, safetensors, Qwen CPU reference, KV cache
+src/runtime/cpu/         Qwen3.5 debug tensor dump support
 src/backends/mps/        Objective-C++ Metal/MPS backend
-src/backends/mpsgraph/   Experimental MPSGraph backend for legacy Qwen3 path
 tests/                   CTest smoke tests
 web/                     Static browser chat page assets
 ```
@@ -529,8 +506,6 @@ web/                     Static browser chat page assets
 - [Qwen3.5 OpenAI thinking](docs/qwen3-5-0-8b-openai-thinking.md)
 - [Qwen3.5 image input research](docs/qwen3-5-0-8b-image-input-llama-cpp.md)
 - [Qwen3.5 MTP llama.cpp research](docs/qwen3-5-0-8b-mtp-llama-cpp.md)
-- [CPU forward inference](docs/forward.md)
-- [MPSGraph backend](docs/mpsgraph-backend.md)
 - [Logging and profiling](docs/logging-and-profiling.md)
 
 ## Current Boundaries

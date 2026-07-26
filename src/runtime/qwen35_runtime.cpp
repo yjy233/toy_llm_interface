@@ -3424,7 +3424,7 @@ Result<mps::MpsBuffer> run_qwen35_full_attention_layer_chunk(
 bool is_qwen35_eos_token(std::int64_t token, const ModelConfig& model,
                          const GenerationConfig& generation,
                          const GgufTokenizer& tokenizer) {
-  if (token == kQwenEndOfText || token == model.eos_token_id) {
+  if (token == model.eos_token_id) {
     return true;
   }
   if (tokenizer.eos_token_id >= 0 && token == tokenizer.eos_token_id) {

@@ -1,5 +1,5 @@
 const defaults = {
-  model: "kraken-infer-qwen3-0.6b",
+  model: "qwen3.5-0.8b",
   device: "cpu",
   maxNewTokens: 16
 };
@@ -46,9 +46,7 @@ function applyConfig(config) {
   if (hasDeviceOption(device)) {
     deviceInput.value = device;
   }
-  const mpsgraphSelected = deviceInput.value === "mpsgraph";
-  streamInput.checked = !mpsgraphSelected;
-  streamInput.disabled = mpsgraphSelected;
+  streamInput.disabled = false;
 }
 
 async function loadConfig() {
@@ -196,12 +194,6 @@ function requestBody(history) {
   }
   return body;
 }
-
-deviceInput.addEventListener("change", () => {
-  const mpsgraphSelected = deviceInput.value === "mpsgraph";
-  streamInput.checked = !mpsgraphSelected;
-  streamInput.disabled = mpsgraphSelected;
-});
 
 function contentFromPayload(payload) {
   return payload && payload.choices && payload.choices[0] &&

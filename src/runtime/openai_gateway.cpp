@@ -3,7 +3,6 @@
 #include "toyllm/model/model_config.hpp"
 #include "toyllm/runtime/cpu_inference.hpp"
 #include "toyllm/runtime/gguf_reader.hpp"
-#include "toyllm/runtime/mpsgraph_inference.hpp"
 #include "toyllm/runtime/qwen35_multimodal.hpp"
 #include "toyllm/runtime/reasoning_parser.hpp"
 
@@ -675,8 +674,8 @@ void parse_common_generation_options(const JsonValue& root, const OpenAIGatewayC
     compute_device = Device::cpu();
   } else if (device == "mps" || device == "mps:0") {
     compute_device = Device::mps();
-  } else if (device == "mpsgraph") {
-    compute_device = Device::mpsgraph();
+  } else if (!device.empty()) {
+    throw std::runtime_error("device must be cpu, mps, or mps:0");
   }
   if (const auto temperature = double_value(object_get(root, "temperature"));
       temperature.has_value()) {
@@ -1279,7 +1278,7 @@ std::string openapi_body(const OpenAIGatewayConfig& config) {
        "\"cache_prompt\":{\"type\":\"boolean\"},\"n_cache_reuse\":{\"type\":\"integer\"},"
        "\"cache_block_tokens\":{\"type\":\"integer\"},\"cache_capacity_blocks\":{\"type\":\"integer\"},"
        "\"seed\":{\"type\":\"integer\"},\"device\":{\"type\":\"string\",\"enum\":[\"cpu\","
-       "\"mps\",\"mps:0\",\"mpsgraph\"]}},\"required\":[\"prompt\"]}}}},\"responses\":{\"200\":"
+       "\"mps\",\"mps:0\"]}},\"required\":[\"prompt\"]}}}},\"responses\":{\"200\":"
        "{\"description\":\"Text completion or SSE stream\",\"content\":{\"application/json\":"
        "{\"schema\":{\"type\":\"object\",\"properties\":{\"usage\":{\"$ref\":"
        "\"#/components/schemas/Usage\"}}}}}}}}},"
@@ -1306,7 +1305,7 @@ std::string openapi_body(const OpenAIGatewayConfig& config) {
        "\"cache_prompt\":{\"type\":\"boolean\"},\"n_cache_reuse\":{\"type\":\"integer\"},"
        "\"cache_block_tokens\":{\"type\":\"integer\"},\"cache_capacity_blocks\":{\"type\":\"integer\"},"
        "\"seed\":{\"type\":\"integer\"},\"device\":{\"type\":\"string\",\"enum\":[\"cpu\","
-       "\"mps\",\"mps:0\",\"mpsgraph\"]}},\"required\":[\"messages\"]}}}},\"responses\":{\"200\":"
+       "\"mps\",\"mps:0\"]}},\"required\":[\"messages\"]}}}},\"responses\":{\"200\":"
        "{\"description\":\"Chat completion, tool call, or SSE stream\",\"content\":"
        "{\"application/json\":{\"schema\":{\"type\":\"object\",\"properties\":{\"usage\":"
        "{\"$ref\":\"#/components/schemas/Usage\"}}}}}}}}}},\"components\":{\"schemas\":"
@@ -1955,18 +1954,6 @@ Status errno_status(std::string_view operation) {
 Status serve_openai_gateway(const OpenAIGatewayConfig& config) {
   if (config.port <= 0 || config.port > 65535) {
     return Status::invalid_argument("gateway port must be in 1..65535");
-  }
-  if (config.mpsgraph_warmup) {
-    if (config.compute_device.kind != DeviceKind::mpsgraph) {
-      return Status::invalid_argument("--mpsgraph-warmup requires --device mpsgraph");
-    }
-    std::cout << "warming up MPSGraph runtime cache..." << std::endl;
-    const auto warmup_status =
-      warmup_mpsgraph(config.model_dir, config.default_max_tokens);
-    if (!warmup_status.is_ok()) {
-      return Status::internal_error("MPSGraph warmup failed: " + warmup_status.message());
-    }
-    std::cout << "MPSGraph warmup complete" << std::endl;
   }
   std::optional<Qwen35MmprojMetadata> mmproj_metadata;
   if (!config.mmproj_path.empty()) {

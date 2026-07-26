@@ -445,26 +445,6 @@ ProfileArtifacts RequestProfiler::write_artifacts() {
   summary_text << "prefill_ms: " << prefill_ms << '\n';
   summary_text << "decode_ms: " << decode_ms << '\n';
   summary_text << "tok_s: " << tok_s << '\n';
-  const auto metadata_value = [&](const char* key) -> const std::string* {
-    const auto it = impl_->metadata.find(key);
-    return it == impl_->metadata.end() ? nullptr : &it->second;
-  };
-  auto append_metadata_line = [&](const char* label, const char* key) {
-    if (const auto* value = metadata_value(key); value != nullptr) {
-      summary_text << label << ": " << *value << '\n';
-    }
-  };
-  append_metadata_line("mpsgraph_model_cache", "mpsgraph_model_cache");
-  append_metadata_line("mpsgraph_decode_cache", "mpsgraph_decode_cache");
-  append_metadata_line("mpsgraph_graph_build_calls", "mpsgraph_graph_build_calls");
-  append_metadata_line("mpsgraph_graph_compile_calls", "mpsgraph_graph_compile_calls");
-  append_metadata_line("mpsgraph_graph_execute_calls", "mpsgraph_graph_execute_calls");
-  append_metadata_line("mpsgraph_executable_cache_hit_count",
-                       "mpsgraph_executable_cache_hit_count");
-  append_metadata_line("mpsgraph_executable_cache_miss_count",
-                       "mpsgraph_executable_cache_miss_count");
-  append_metadata_line("mpsgraph_executable_cache_entry_count",
-                       "mpsgraph_executable_cache_entry_count");
   summary_text << '\n';
   summary_text << "top operators by self time:\n";
 

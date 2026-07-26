@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-tokens", type=int, default=64)
     parser.add_argument("--draft-tokens", type=int, default=3)
     parser.add_argument("--p-min", type=float, default=0.30)
-    parser.add_argument("--device", default="mps", choices=["cpu", "mps", "mpsgraph"])
+    parser.add_argument("--device", default="mps", choices=["cpu", "mps"])
     parser.add_argument("--timeout", type=float, default=240.0)
     parser.add_argument("--skip-llama", action="store_true")
     parser.add_argument(
