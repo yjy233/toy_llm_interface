@@ -5403,6 +5403,7 @@ Result<CpuGenerationResult> generate_qwen35_metal(const CpuGenerationRequest& re
   {
     auto span = profiler.scoped("request.tokenize");
     if (image_mmproj_metadata.has_value()) {
+      // multimodal prefill 过程，
       auto mixed = build_qwen35_mixed_prefill_plan(
         tokenizer.value(), *image_mmproj_metadata, request.mmproj_path,
         request.messages, true, request.enable_thinking);
@@ -5433,10 +5434,11 @@ Result<CpuGenerationResult> generate_qwen35_metal(const CpuGenerationRequest& re
   }
 
 
-  //
+  // 本次请求送进 Qwen3.5 Prefill 阶段的输入 token 总数。
   const auto prompt_token_count = mixed_prefill.has_value()
                                     ? mixed_prefill->total_tokens
                                     : prompt_tokens.value().size();
+  // prompt_mrope_position_count   Prompt 处理完成后，下一个生成 token 应从哪个 MRoPE 位置开始。                             
   const auto prompt_mrope_position_count =
     mixed_prefill.has_value() ? mixed_prefill->total_position_advance
                               : prompt_token_count;
